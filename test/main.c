@@ -1,7 +1,10 @@
 #include <stdio.h>
 
 int main(void) {
-  printf("%f\n", 10.0 / 2);
+  int a,b;
+  a = b = 1;
+  printf("%d\n", a);
+  printf("%d\n", b);
 
   return 0;
 }
