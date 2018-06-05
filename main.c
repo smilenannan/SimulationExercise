@@ -77,29 +77,10 @@ EESM init_EESM(ESM esm, int nums_node[3]) {
     }
   }
 
-  // apply esm elements to eesm
-  // sorting esm and nums_node in ascending order of nums_node
-  for (int i=0; i<3; i++) {
-    for (int j=i+1; j<3; j++) {
-      if (nums_node[i] < nums_node[j]) {
-        // exchanging element of nums_node
-        tmp_num =  nums_node[i];
-        nums_node[i] = nums_node[j];
-        nums_node[j] = tmp_num;
-        // exchanging element of esm
-        for (int k=0; k<3; k++) {
-          tmp_esm = esm[k][i];
-          esm[k][i] = esm[k][j];
-          esm[k][j] = tmp_esm;
-        }
-      }
-    }
-  }
-
   // extend esm to eesm
-  for (int i=0; i<N_node_side; i++) {
-    for (int j=0; j<N_node_side, j++) {
-      
+  for(int i=0; i<3; i++) {
+    for(int j=0; j<3; j++) {
+      eesm.array[nums_node[i]][nums_node[j]] = esm.array[i][j];
     }
   }
 
