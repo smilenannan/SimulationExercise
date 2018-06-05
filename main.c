@@ -87,6 +87,22 @@ EESM init_EESM(ESM esm, int nums_node[3]) {
   return eesm;
 }
 
+// osm is the abbreviation of OverallSniffnessMatrix
+typedef struct {
+  double array[N_node_side][N_node_side];
+} OSM;
+
+OSM init_OSM(void) {
+  OSM osm;
+  for(int i=0; i<N_node_side; i++) {
+    for(int j=0; j<N_node_side; j++) {
+      osm.array[i][j] = 0.0;
+    }
+  }
+
+  return osm;
+}
+
 int main(void) {
   // initialize nodes
   Node nodes[N_node_side][N_node_side];
@@ -96,13 +112,13 @@ int main(void) {
     }
   }
 
-  // osm is the abbreviation of OverallSniffnessMatrix
-  double osm[N_node_side][N_node_side];
-  for(int i=0; i<N_node_side; i++) {
-    for(int j=0; j<N_node_side; j++) {
-      osm[i][j] = 0.0;
+  OSM osm = init_OSM();
+  // uppser triangle
+  for(int i=0; i<N_node_side-1; i++) {
+    for(int j=0; j<N_node_side-1; j++) {
+      ESM esm = init_ESM(nodes[i][j], nodes[i+1][j], nodes[i+1][j+1]);
     }
   }
-  
+
   return 0;
 }
