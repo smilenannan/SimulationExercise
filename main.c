@@ -1,5 +1,12 @@
 #include <stdio.h>
 
+// set values
+#define L 10.0
+#define N_SIDE 2
+
+#define l (L/N_SIDE)
+#define N_node_side (N_SIDE+1)
+
 typedef struct {
     double x;
     double y;
@@ -19,7 +26,7 @@ typedef struct {
 
 ESM init_ESM(Node node1, Node node2, Node node3) {
   ESM esm;
-  double x1,x2,x3,y1,y2,y3
+  double x1,x2,x3,y1,y2,y3;
   double a1,a2,a3,b1,b2,b3,c1,c2,c3;
   double A; // area of a target element
   
@@ -55,14 +62,52 @@ ESM init_ESM(Node node1, Node node2, Node node3) {
   return esm;
 }
 
+// eesm is the abbreviation of ExtentedElemetsSNiffnessMatrix
+typedef struct {
+  double array[N_node_side][N_node_side];
+} EESM;
+
+EESM init_EESM(ESM esm, int nums_node[3]) {
+  EESM eesm;
+  
+  // initialize eesm as zero elemetns
+  for(int i=0; i<N_node_side; i++) {
+    for(int j=0; j<N_node_side; j++) {
+      eesm.array[i][j] = 0.0;
+    }
+  }
+
+  // apply esm elements to eesm
+  // sorting esm and nums_node in ascending order of nums_node
+  for (int i=0; i<3; i++) {
+    for (int j=i+1; j<3; j++) {
+      if (nums_node[i] < nums_node[j]) {
+        // exchanging element of nums_node
+        tmp_num =  nums_node[i];
+        nums_node[i] = nums_node[j];
+        nums_node[j] = tmp_num;
+        // exchanging element of esm
+        for (int k=0; k<3; k++) {
+          tmp_esm = esm[k][i];
+          esm[k][i] = esm[k][j];
+          esm[k][j] = tmp_esm;
+        }
+      }
+    }
+  }
+
+  // extend esm to eesm
+  for (int i=0; i<N_node_side; i++) {
+    for (int j=0; j<N_node_side, j++) {
+      
+    }
+  }
+
+  return eesm;
+}
+
 int main(void) {
-  double L = 10.0;
-  int N_side = 2;
-
-  double l = L / N_side;
-  int N_node_side = N_side + 1;
-
-  // initialize
+  // initialize nodes
   Node nodes[N_node_side][N_node_side];
   for(int i=0; i<N_node_side; i++) {
     for(int j=0; j<N_node_side; j++) {
@@ -70,6 +115,13 @@ int main(void) {
     }
   }
 
-
+  // osm is the abbreviation of OverallSniffnessMatrix
+  double osm[N_node_side][N_node_side];
+  for(int i=0; i<N_node_side; i++) {
+    for(int j=0; j<N_node_side; j++) {
+      osm[i][j] = 0.0;
+    }
+  }
+  
   return 0;
 }
