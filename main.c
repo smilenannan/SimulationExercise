@@ -124,8 +124,9 @@ int main(void) {
       int nums_node[3] = { num_node1, num_node2, num_node3 };
       EESM eesm = init_EESM(esm, nums_node);
       
-      for(int m=0; m<N_node_side; m++) {
-        for(int n=0; n<N_node_side; n++) {
+      // update osm
+      for(int m=0; m<N_node; m++) {
+        for(int n=0; n<N_node; n++) {
           osm.array[i][j] += eesm.array[i][j];
         }
       }
@@ -142,11 +143,19 @@ int main(void) {
       int nums_node[3] = { num_node1, num_node2, num_node3 };
       EESM eesm = init_EESM(esm, nums_node);
       
-      for(int m=0; m<N_node_side; m++) {
-        for(int n=0; n<N_node_side; n++) {
+      // update osm
+      for(int m=0; m<N_node; m++) {
+        for(int n=0; n<N_node; n++) {
           osm.array[i][j] += eesm.array[i][j];
         }
       }
+    }
+  }
+
+   
+  for(int i=1; i<N_node; i++) {
+    for(int j=1; j<N_node; j++) {
+      printf("%f\n", osm.array[i][j]);
     }
   }
   
