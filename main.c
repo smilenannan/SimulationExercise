@@ -6,6 +6,7 @@
 
 #define l (L/N_SIDE)
 #define N_node_side (N_SIDE+1)
+#define N_node (N_node_side*N_node_side)
 
 typedef struct {
     double x;
@@ -64,15 +65,15 @@ ESM init_ESM(Node node1, Node node2, Node node3) {
 
 // eesm is the abbreviation of ExtentedElemetsSNiffnessMatrix
 typedef struct {
-  double array[N_node_side][N_node_side];
+  double array[N_node][N_node];
 } EESM;
 
 EESM init_EESM(ESM esm, int nums_node[3]) {
   EESM eesm;
   
   // initialize eesm as zero elemetns
-  for(int i=0; i<N_node_side; i++) {
-    for(int j=0; j<N_node_side; j++) {
+  for(int i=0; i<N_node; i++) {
+    for(int j=0; j<N_node; j++) {
       eesm.array[i][j] = 0.0;
     }
   }
@@ -89,13 +90,13 @@ EESM init_EESM(ESM esm, int nums_node[3]) {
 
 // osm is the abbreviation of OverallSniffnessMatrix
 typedef struct {
-  double array[N_node_side][N_node_side];
+  double array[N_node][N_node];
 } OSM;
 
 OSM init_OSM(void) {
   OSM osm;
-  for(int i=0; i<N_node_side; i++) {
-    for(int j=0; j<N_node_side; j++) {
+  for(int i=0; i<N_node; i++) {
+    for(int j=0; j<N_node; j++) {
       osm.array[i][j] = 0.0;
     }
   }
@@ -117,8 +118,37 @@ int main(void) {
   for(int i=0; i<N_node_side-1; i++) {
     for(int j=0; j<N_node_side-1; j++) {
       ESM esm = init_ESM(nodes[i][j], nodes[i+1][j], nodes[i+1][j+1]);
+      int num_node1 = N_node_side * i + j;
+      int num_node2 = N_node_side * (i+1) + j;
+      int num_node3 = N_node_side * (i+1) + (j+1);
+      int nums_node[3] = { num_node1, num_node2, num_node3 };
+      EESM eesm = init_EESM(esm, nums_node);
+      
+      for(int m=0; m<N_node_side; m++) {
+        for(int n=0; n<N_node_side; n++) {
+          osm.array[i][j] += eesm.array[i][j];
+        }
+      }
     }
   }
 
+  // lower triangle
+  for(int i=1; i<N_node_side; i++) {
+    for(int j=1; j<N_node_side; j++) {
+      ESM esm = init_ESM(nodes[i][j], nodes[i-1][j], nodes[i-1][j-1]);
+      int num_node1 = N_node_side * i + j;
+      int num_node2 = N_node_side * (i-1) + j;
+      int num_node3 = N_node_side * (i-1) + (j-1);
+      int nums_node[3] = { num_node1, num_node2, num_node3 };
+      EESM eesm = init_EESM(esm, nums_node);
+      
+      for(int m=0; m<N_node_side; m++) {
+        for(int n=0; n<N_node_side; n++) {
+          osm.array[i][j] += eesm.array[i][j];
+        }
+      }
+    }
+  }
+  
   return 0;
 }

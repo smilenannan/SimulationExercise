@@ -10,8 +10,6 @@ int main(void) {
     }
   }
 
-  for(int k=0; k<3; k++) {
-  }
 
   return 0;
 }
