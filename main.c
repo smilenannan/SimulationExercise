@@ -2,7 +2,7 @@
 
 // set values
 #define L 10.0
-#define N_SIDE 2
+#define N_SIDE 1
 
 #define l (L/N_SIDE)
 #define N_node_side (N_SIDE+1)
@@ -127,7 +127,7 @@ int main(void) {
       // update osm
       for(int m=0; m<N_node; m++) {
         for(int n=0; n<N_node; n++) {
-          osm.array[i][j] += eesm.array[i][j];
+          osm.array[m][n] += eesm.array[m][n];
         }
       }
     }
@@ -146,15 +146,15 @@ int main(void) {
       // update osm
       for(int m=0; m<N_node; m++) {
         for(int n=0; n<N_node; n++) {
-          osm.array[i][j] += eesm.array[i][j];
+          osm.array[m][n] += eesm.array[m][n];
         }
       }
     }
   }
 
    
-  for(int i=1; i<N_node; i++) {
-    for(int j=1; j<N_node; j++) {
+  for(int i=0; i<N_node; i++) {
+    for(int j=0; j<N_node; j++) {
       printf("%f\n", osm.array[i][j]);
     }
   }
