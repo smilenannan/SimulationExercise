@@ -3,10 +3,13 @@
 // set values
 #define L 10.0
 #define N_SIDE 1
+#define N_NODE_INIT 2
+int nums_node_init[N_NODE_INIT] = { 2, 3 }; 
 
 #define l (L/N_SIDE)
 #define N_node_side (N_SIDE+1)
 #define N_node (N_node_side*N_node_side)
+#define N_unknown_node (N_node-N_NODE_INIT)
 
 typedef struct {
     double x;
@@ -104,6 +107,99 @@ OSM init_OSM(void) {
   return osm;
 }
 
+// sosm is the abbreviation of SmallOverallSniffnessMatrix
+typedef struct {
+  double array[N_unknown_node][N_unknown_node];
+} SOSM;
+
+SOSM init_SOSM(OSM osm, int nums_unknown_node[N_unknown_node]) {
+  SOSM sosm;
+
+ for(int i=0; i<N_unknown_node; i++) {
+    for(int j=0; j<N_unknown_node; j++) {
+      sosm.array[i][j] = osm.array[nums_unknown_node[i]][nums_unknown_node[j]];
+    }
+  }   
+
+  return sosm;
+}
+
+typedef struct {
+  double array[N_unknown_node][N_unknown_node];
+} INV_SOSM;
+
+// Gaussian elimination
+INV_SOSM init_INV_SOSM(SOSM sosm) {
+  INV_SOSM inv_sosm;
+
+  // initialize inv_sosm as identity matrix
+  for(int i=0; i<N_unknown_node; i++) {
+    for(int j=0; j<N_unknown_node; j++) {
+      inv_sosm.array[i][j] = (i==j);
+    }
+  }
+
+  for(int i=0; i<N_unknown_node; i++) {
+    double tmp_normalize = 1.0 / sosm.array[i][i];
+    // normalize elements along column based on diagonal element
+    for(int j=0; j<N_unknown_node; j++) {
+      sosm.array[i][j] *= tmp_normalize;
+      inv_sosm.array[i][j] *= tmp_normalize;
+    }
+  // convert into zero except diagonal element
+  for(int m=0; m<N_unknown_node; m++) {
+    if(m!=i) {
+      double tmp_toZero = sosm.array[m][i];
+      for (int n=0; n<N_unknown_node; n++) {
+        sosm.array[m][n] -= sosm.array[i][n] * tmp_toZero;
+        inv_sosm.array[m][n] -= inv_sosm.array[i][n] * tmp_toZero;
+      }
+    }
+  }
+  }
+  return inv_sosm;
+}
+
+// EF is the abbreviation of ExtendedF
+typedef struct {
+  double array[N_node];
+} EF;
+
+EF init_EF(int nums_node[3]) {
+  EF ef;
+
+  return ef;
+}
+
+// OF is the abbreviation of OverallF
+typedef struct {
+  double array[N_node];
+} OF;
+
+OF init_OF(void) {
+  OF of;
+  for(int i=0; i<N_node; i++) {
+    of.array[i] = 0;
+  }
+  return of; 
+}
+
+// SOF is the abbreviation of SmallOverallF
+typedef struct {
+  double array[N_unknown_node];
+} SOF;
+
+SOF init_SOF(OF of, int nums_unknown_node[N_unknown_node]) {
+  SOF sof;
+
+  for(int i=0; i<N_unknown_node; i++) {
+    sof.array[i] = of.array[nums_unknown_node[i]];
+  }  
+
+  return sof; 
+}
+
+
 int main(void) {
   // initialize nodes
   Node nodes[N_node_side][N_node_side];
@@ -152,11 +248,28 @@ int main(void) {
     }
   }
 
-   
+  
+  // extract numbers of unknown nodes
+  int nums_unknown_node[N_unknown_node];
+  int m = 0;
+  int n = 0;
   for(int i=0; i<N_node; i++) {
-    for(int j=0; j<N_node; j++) {
-      printf("%f\n", osm.array[i][j]);
+    if(i==nums_node_init[m]) {
+      m++;
+    } else {
+      nums_unknown_node[n] = i;
+      n++;
     }
+  }
+  
+  SOSM sosm = init_SOSM(osm, nums_unknown_node);
+  INV_SOSM inv_sosm = init_INV_SOSM(sosm);
+  
+  for(int i=0; i<N_unknown_node; i++) {
+    for(int j=0; j<N_unknown_node; j++) {
+      printf("%f,", inv_sosm.array[i][j]);
+    }
+    printf("\n");
   }
   
   return 0;
