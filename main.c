@@ -1,15 +1,26 @@
 #include <stdio.h>
+#include <math.h>
 
-// set values
+// -------- set values --------
 #define L 10.0
-#define N_SIDE 1
+#define N_SIDE 2
 #define N_NODE_INIT 2
+#define N_EDGE_INIT 0
 int nums_node_init[N_NODE_INIT] = { 2, 3 }; 
+double phis_node_init[N_NODE_INIT] = { 1, 1 };
+
+int nums_node_from[N_EDGE_INIT];
+int nums_node_to[N_EDGE_INIT];
+double qs[N_EDGE_INIT];
+
+// ---------------
 
 #define l (L/N_SIDE)
 #define N_node_side (N_SIDE+1)
 #define N_node (N_node_side*N_node_side)
 #define N_unknown_node (N_node-N_NODE_INIT)
+double Q[N_node][N_node];
+
 
 typedef struct {
     double x;
@@ -167,6 +178,22 @@ typedef struct {
 
 EF init_EF(int nums_node[3]) {
   EF ef;
+  
+  for(int i=0; i<N_node; i++) {
+    ef.array[i] = 0.0;
+  }
+
+  double q1,q2,q3,L1,L2,L3;
+  L1 = L2 = l;
+  L3 = sqrt(2) * l;
+  
+  q1 = Q[nums_node[0]][nums_node[1]];
+  q2 = Q[nums_node[1]][nums_node[2]];
+  q3 = Q[nums_node[2]][nums_node[0]];
+
+  ef.array[nums_node[0]] = (-1 / 2) * (q1 * L1 + q3 * L3);
+  ef.array[nums_node[1]] = (-1 / 2) * (q1 * L1 + q2 * L2);
+  ef.array[nums_node[2]] = (-1 / 2) * (q2 * L2 + q3 * L3);
 
   return ef;
 }
@@ -179,9 +206,20 @@ typedef struct {
 OF init_OF(void) {
   OF of;
   for(int i=0; i<N_node; i++) {
-    of.array[i] = 0;
+    of.array[i] = 0.0;
   }
+
   return of; 
+}
+
+OF update_OF(OF of, OSM osm) {
+  for(int i=0; i<N_NODE_INIT; i++) {
+    for(int j=0; j<N_node; j++) {
+      of.array[j] -= phis_node_init[i] * osm.array[j][i];
+    }
+  }
+
+  return of;
 }
 
 // SOF is the abbreviation of SmallOverallF
@@ -201,6 +239,18 @@ SOF init_SOF(OF of, int nums_unknown_node[N_unknown_node]) {
 
 
 int main(void) {
+  //initialize Q
+  for(int i=0; i<N_node; i++) {
+    for(int j=0; j<N_node; j++) {
+      Q[i][j] = 0.0;
+    }
+  }
+
+  if(N_EDGE_INIT>0) {
+    for(int i=0; i<N_EDGE_INIT; i++) {
+      Q[nums_node_from[i]][nums_node_from[i]] = qs[i];
+    }
+  }
   // initialize nodes
   Node nodes[N_node_side][N_node_side];
   for(int i=0; i<N_node_side; i++) {
@@ -209,7 +259,9 @@ int main(void) {
     }
   }
 
+  // start calculation
   OSM osm = init_OSM();
+  OF of = init_OF();
   // uppser triangle
   for(int i=0; i<N_node_side-1; i++) {
     for(int j=0; j<N_node_side-1; j++) {
@@ -219,12 +271,17 @@ int main(void) {
       int num_node3 = N_node_side * (i+1) + (j+1);
       int nums_node[3] = { num_node1, num_node2, num_node3 };
       EESM eesm = init_EESM(esm, nums_node);
+      EF ef = init_EF(nums_node);
       
       // update osm
       for(int m=0; m<N_node; m++) {
         for(int n=0; n<N_node; n++) {
           osm.array[m][n] += eesm.array[m][n];
         }
+      }
+      // update of
+      for(int m=0; m<N_node; m++) {
+        of.array[m] += ef.array[m];
       }
     }
   }
@@ -238,16 +295,20 @@ int main(void) {
       int num_node3 = N_node_side * (i-1) + (j-1);
       int nums_node[3] = { num_node1, num_node2, num_node3 };
       EESM eesm = init_EESM(esm, nums_node);
+      EF ef = init_EF(nums_node);
       
-      // update osm
+      // update osm & of
       for(int m=0; m<N_node; m++) {
         for(int n=0; n<N_node; n++) {
           osm.array[m][n] += eesm.array[m][n];
         }
       }
+      // update of
+      for(int m=0; m<N_node; m++) {
+        of.array[m] += ef.array[m];
+      }
     }
   }
-
   
   // extract numbers of unknown nodes
   int nums_unknown_node[N_unknown_node];
@@ -262,8 +323,22 @@ int main(void) {
     }
   }
   
+  // apply initial node conditions
+  of = update_OF(of, osm);
   SOSM sosm = init_SOSM(osm, nums_unknown_node);
   INV_SOSM inv_sosm = init_INV_SOSM(sosm);
+  SOF sof = init_SOF(of, nums_unknown_node);
+
+  // output result
+  double phis_unknown_node[N_unknown_node];
+  int sum_element;
+  for(int i=0; i<N_unknown_node; i++) {
+    sum_element = 0;
+    for(int j=0; j<N_unknown_node; j++) {
+      sum_element += inv_sosm.array[i][j] * sof.array[j];
+    }
+    phis_unknown_node[i] = sum_element;
+  }
   
   for(int i=0; i<N_unknown_node; i++) {
     for(int j=0; j<N_unknown_node; j++) {
@@ -271,6 +346,16 @@ int main(void) {
     }
     printf("\n");
   }
+  printf("\n");
   
+  for(int i=0; i<N_unknown_node; i++) {
+    printf("%f\n", sof.array[i]);
+  }
+  printf("\n");
+
+  for(int i=0; i<N_unknown_node; i++) {
+    printf("%f\n", phis_unknown_node[i]);
+  }
+  printf("\n");
   return 0;
 }

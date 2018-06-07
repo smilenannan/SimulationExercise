@@ -1,10 +1,9 @@
 #include <stdio.h>
+#include <math.h>
 
 int main(void) {
-  int a = 0;
-  for(int i=0; i<3; i++) {
-    printf("%d\n", a);
-    a++;
-  }
+  double a = sqrt(2);
+  
+  printf("%f\n", a);
   return 0;
 }
