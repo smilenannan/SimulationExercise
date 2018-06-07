@@ -3,7 +3,7 @@
 
 // -------- set values --------
 #define L 10.0
-#define N_SIDE 2
+#define N_SIDE 5
 #define N_NODE_INIT 2
 #define N_EDGE_INIT 0
 int nums_node_init[N_NODE_INIT] = { 2, 3 }; 
@@ -331,7 +331,7 @@ int main(void) {
 
   // output result
   double phis_unknown_node[N_unknown_node];
-  int sum_element;
+  double sum_element;
   for(int i=0; i<N_unknown_node; i++) {
     sum_element = 0;
     for(int j=0; j<N_unknown_node; j++) {
