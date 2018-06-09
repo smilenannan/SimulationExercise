@@ -14,6 +14,8 @@ int nums_node_from[N_EDGE_INIT];
 int nums_node_to[N_EDGE_INIT];
 double qs[N_EDGE_INIT];
 
+#define N_SERIES 100 // value for analytical solution plotting
+
 // ---------------
 
 #define l (L/N_SIDE)
@@ -272,12 +274,6 @@ int main(void) {
     }
   }
 
-  //debug
-  for(int i=0; i<N_NODE_INIT; i++) {
-    printf("%f\n", phis_node_init[i]);
-  }
-  printf("\n");
-
   //initialize Q
   for(int i=0; i<N_node; i++) {
     for(int j=0; j<N_node; j++) {
@@ -423,10 +419,23 @@ int main(void) {
     fprintf(file, "\n");
   }
 
+
+  fclose(file);
+
+  // plot by gnuplot
+  //FILE *gp;
+  //gp = popen("gnuplot -persist", "w");
+  //fprintf(gp, "u(x,y,n) = sum[k=1:n] u0*2.0*(1-(-1)**k)*sin(k*pi*x/L)*(exp(k*pi*y/L)-exp(-k*pi*y/L))/(k*pi*(exp(k*pi)-exp(-k*pi)))\n");
+  //fprintf(gp, "u0 = %f\n", boundary);
+  //fprintf(gp, "L = %f\n", L);
+  //fprintf(gp, "set xrange [0:%f]\n", L);
+  //fprintf(gp, "set yrange [0:%f]\n", L);
+  //fprintf(gp, "splot u(x,y,%d)\n", N_SERIES);
+  //pclose(gp);
+
   for(int i=0; i<N_node; i++) {
     printf("%f\n", phis_node[i]);
   }
 
-  fclose(file);
   return 0;
 }
