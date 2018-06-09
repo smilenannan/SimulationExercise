@@ -1,9 +1,8 @@
 #include <stdio.h>
 #include <math.h>
+#define A ((1*1)+(1*1))*(1+1) 
 
 int main(void) {
-  double a = sqrt(2);
-  
-  printf("%f\n", a);
+  printf("%d\n", A);
   return 0;
 }

@@ -2,12 +2,13 @@
 #include <math.h>
 
 // -------- set values --------
-#define L 10.0
-#define N_SIDE 5
-#define N_NODE_INIT 2
+#define L 1.0
+#define N_SIDE 2
+#define N_NODE_INIT ((N_SIDE+1)*(N_SIDE+1)-(N_SIDE-1)*(N_SIDE-1))
 #define N_EDGE_INIT 0
-int nums_node_init[N_NODE_INIT] = { 2, 3 }; 
-double phis_node_init[N_NODE_INIT] = { 1, 1 };
+double boundary = 1.0;
+int nums_node_init[N_NODE_INIT];//    = { 0, 1, 2, 3, 4, 7, 8, 11, 12, 13, 14, 15 }; 
+double phis_node_init[N_NODE_INIT];// = { 5, 5, 5, 5, 0, 0, 0,  0,  0,  0,  0,  0 };
 
 int nums_node_from[N_EDGE_INIT];
 int nums_node_to[N_EDGE_INIT];
@@ -239,6 +240,44 @@ SOF init_SOF(OF of, int nums_unknown_node[N_unknown_node]) {
 
 
 int main(void) {
+  // initialize boundaries
+  int p = 0;
+  for(int i=0; i<N_node; i++) {
+    if(i>=0 && i<N_node_side) {
+      nums_node_init[p] = i;
+      phis_node_init[p] = 0;
+      p++;
+    } else if(i>(N_node-1-N_node_side) && i<N_node) {
+      nums_node_init[p] = i;
+      phis_node_init[p] = boundary;
+      p++;
+    } else if(i%N_node_side==0 || i%N_node_side==(N_node_side-1)) {
+      nums_node_init[p] = i;
+      phis_node_init[p] = 0;
+      p++;
+    }
+  }
+
+  // sorting
+  for (int i=0; i<N_NODE_INIT; i++) {
+    for (int j=i+1; j<N_NODE_INIT; j++) {
+      if (nums_node_init[i] > nums_node_init[j]) {
+        double tmp_nums =  nums_node_init[i];
+        nums_node_init[i] = nums_node_init[j];
+        nums_node_init[j] = tmp_nums;
+        double tmp_phis =  phis_node_init[i];
+        phis_node_init[i] = phis_node_init[j];
+        phis_node_init[j] = tmp_phis;
+      }
+    }
+  }
+
+  //debug
+  for(int i=0; i<N_NODE_INIT; i++) {
+    printf("%f\n", phis_node_init[i]);
+  }
+  printf("\n");
+
   //initialize Q
   for(int i=0; i<N_node; i++) {
     for(int j=0; j<N_node; j++) {
@@ -340,22 +379,54 @@ int main(void) {
     phis_unknown_node[i] = sum_element;
   }
   
-  for(int i=0; i<N_unknown_node; i++) {
-    for(int j=0; j<N_unknown_node; j++) {
-      printf("%f,", inv_sosm.array[i][j]);
-    }
-    printf("\n");
-  }
-  printf("\n");
-  
-  for(int i=0; i<N_unknown_node; i++) {
-    printf("%f\n", sof.array[i]);
-  }
-  printf("\n");
+  // debug
+  //for(int i=0; i<N_unknown_node; i++) {
+  //  for(int j=0; j<N_unknown_node; j++) {
+  //    printf("%f,", inv_sosm.array[i][j]);
+  //  }
+  //  printf("\n");
+  //}
+  //printf("\n");
+  //
+  //for(int i=0; i<N_unknown_node; i++) {
+  //  printf("%f\n", sof.array[i]);
+  //}
+  //printf("\n");
 
-  for(int i=0; i<N_unknown_node; i++) {
-    printf("%f\n", phis_unknown_node[i]);
+  //for(int i=0; i<N_unknown_node; i++) {
+  //  printf("%f\n", phis_unknown_node[i]);
+  //}
+  //printf("\n");
+
+  // write output on dat file
+  double phis_node[N_node];
+  m = 0;
+  n = 0;
+  for(int i=0; i<N_node; i++) {
+    if(i==nums_node_init[m]) {
+      phis_node[i] = phis_node_init[m];
+      m++;
+    }else {
+      phis_node[i] = phis_unknown_node[n];
+      n++;
+    }
   }
-  printf("\n");
+
+  FILE *file;
+  file = fopen("output/output.dat","w");
+  m = 0;
+  for(int i=0; i<N_node_side; i++) {
+    for(int j=0; j<N_node_side; j++) {
+      fprintf(file, "%f %f %f\n", nodes[i][j].x, nodes[i][j].y, phis_node[m]); 
+      m++;
+    }
+    fprintf(file, "\n");
+  }
+
+  for(int i=0; i<N_node; i++) {
+    printf("%f\n", phis_node[i]);
+  }
+
+  fclose(file);
   return 0;
 }
