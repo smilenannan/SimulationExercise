@@ -3,7 +3,7 @@
 
 // -------- set values --------
 #define L 1.0
-#define N_SIDE 2
+#define N_SIDE 100
 #define N_NODE_INIT ((N_SIDE+1)*(N_SIDE+1)-(N_SIDE-1)*(N_SIDE-1))
 #define N_EDGE_INIT 0
 double boundary = 1.0;
@@ -218,7 +218,7 @@ OF init_OF(void) {
 OF update_OF(OF of, OSM osm) {
   for(int i=0; i<N_NODE_INIT; i++) {
     for(int j=0; j<N_node; j++) {
-      of.array[j] -= phis_node_init[i] * osm.array[j][i];
+      of.array[j] -= phis_node_init[i] * osm.array[j][nums_node_init[i]];
     }
   }
 
@@ -245,15 +245,12 @@ int main(void) {
   // initialize boundaries
   int p = 0;
   for(int i=0; i<N_node; i++) {
-    if(i>=0 && i<N_node_side) {
-      nums_node_init[p] = i;
-      phis_node_init[p] = 0;
-      p++;
-    } else if(i>(N_node-1-N_node_side) && i<N_node) {
+    if(i%N_node_side==(N_node_side-1)) {
       nums_node_init[p] = i;
       phis_node_init[p] = boundary;
       p++;
-    } else if(i%N_node_side==0 || i%N_node_side==(N_node_side-1)) {
+    }
+    else if((i>=0 && i<N_node_side-1) || (i%N_node_side==0) || (i>(N_node-1-N_node_side) && i<N_node-1)) {
       nums_node_init[p] = i;
       phis_node_init[p] = 0;
       p++;
@@ -344,7 +341,7 @@ int main(void) {
       }
     }
   }
-  
+
   // extract numbers of unknown nodes
   int nums_unknown_node[N_unknown_node];
   int m = 0;
@@ -375,25 +372,6 @@ int main(void) {
     phis_unknown_node[i] = sum_element;
   }
   
-  // debug
-  //for(int i=0; i<N_unknown_node; i++) {
-  //  for(int j=0; j<N_unknown_node; j++) {
-  //    printf("%f,", inv_sosm.array[i][j]);
-  //  }
-  //  printf("\n");
-  //}
-  //printf("\n");
-  //
-  //for(int i=0; i<N_unknown_node; i++) {
-  //  printf("%f\n", sof.array[i]);
-  //}
-  //printf("\n");
-
-  //for(int i=0; i<N_unknown_node; i++) {
-  //  printf("%f\n", phis_unknown_node[i]);
-  //}
-  //printf("\n");
-
   // write output on dat file
   double phis_node[N_node];
   m = 0;
@@ -423,19 +401,20 @@ int main(void) {
   fclose(file);
 
   // plot by gnuplot
-  //FILE *gp;
-  //gp = popen("gnuplot -persist", "w");
-  //fprintf(gp, "u(x,y,n) = sum[k=1:n] u0*2.0*(1-(-1)**k)*sin(k*pi*x/L)*(exp(k*pi*y/L)-exp(-k*pi*y/L))/(k*pi*(exp(k*pi)-exp(-k*pi)))\n");
-  //fprintf(gp, "u0 = %f\n", boundary);
-  //fprintf(gp, "L = %f\n", L);
-  //fprintf(gp, "set xrange [0:%f]\n", L);
-  //fprintf(gp, "set yrange [0:%f]\n", L);
-  //fprintf(gp, "splot u(x,y,%d)\n", N_SERIES);
-  //pclose(gp);
+  FILE *gp;
+  gp = popen("gnuplot -persist", "w");
+  fprintf(gp, "u(x,y,n) = sum[k=1:n] u0*2.0*(1-(-1)**k)*sin(k*pi*x/L)*(exp(k*pi*y/L)-exp(-k*pi*y/L))/(k*pi*(exp(k*pi)-exp(-k*pi)))\n");
+  fprintf(gp, "u0 = %f\n", boundary);
+  fprintf(gp, "L = %f\n", L);
+  fprintf(gp, "set xrange [0:%f]\n", L);
+  fprintf(gp, "set yrange [0:%f]\n", L);
+  //fprintf(gp, "splot u(x,y,%d), \"output/output.dat\" with lines\n", N_SERIES);
+  fprintf(gp, "splot \"output/output.dat\" with lines\n", N_SERIES);
+  pclose(gp);
 
-  for(int i=0; i<N_node; i++) {
-    printf("%f\n", phis_node[i]);
-  }
+ // for(int i=0; i<N_node; i++) {
+ //   printf("%f\n", phis_node[i]);
+ // }
 
   return 0;
 }

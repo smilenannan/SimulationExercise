@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <math.h>
-#define A ((1*1)+(1*1))*(1+1) 
+#define A 100 
 
 int main(void) {
-  printf("%d\n", A);
+  printf("%d\n", 0%A);
   return 0;
 }
