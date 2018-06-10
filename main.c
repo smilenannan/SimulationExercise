@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <math.h>
+#define PI 3.141592
 
 // -------- set values --------
 #define L 1.0
-#define N_SIDE 100
+#define N_SIDE 20
 #define N_NODE_INIT ((N_SIDE+1)*(N_SIDE+1)-(N_SIDE-1)*(N_SIDE-1))
 #define N_EDGE_INIT 0
 double boundary = 1.0;
@@ -179,9 +180,20 @@ typedef struct {
   double array[N_node];
 } EF;
 
-EF init_EF(int nums_node[3]) {
+EF init_EF(int nums_node[3], Node node1, Node node2, Node node3) {
   EF ef;
+  double x1,x2,x3,y1,y2,y3;
+  double A; // area of a target element
   
+  // initialize
+  x1 = node1.x;
+  y1 = node1.y;
+  x2 = node2.x;
+  y2 = node2.y;
+  x3 = node3.x;
+  y3 = node3.y;
+  A = (x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)) / 2;
+
   for(int i=0; i<N_node; i++) {
     ef.array[i] = 0.0;
   }
@@ -303,7 +315,7 @@ int main(void) {
       int num_node3 = N_node_side * (i+1) + (j+1);
       int nums_node[3] = { num_node1, num_node2, num_node3 };
       EESM eesm = init_EESM(esm, nums_node);
-      EF ef = init_EF(nums_node);
+      EF ef = init_EF(nums_node, nodes[i][j], nodes[i+1][j], nodes[i+1][j+1]);
       
       // update osm
       for(int m=0; m<N_node; m++) {
@@ -327,7 +339,7 @@ int main(void) {
       int num_node3 = N_node_side * (i-1) + (j-1);
       int nums_node[3] = { num_node1, num_node2, num_node3 };
       EESM eesm = init_EESM(esm, nums_node);
-      EF ef = init_EF(nums_node);
+      EF ef = init_EF(nums_node, nodes[i][j], nodes[i+1][j], nodes[i+1][j+1]);
       
       // update osm & of
       for(int m=0; m<N_node; m++) {
@@ -387,7 +399,9 @@ int main(void) {
   }
 
   FILE *file;
-  file = fopen("output/output.dat","w");
+  char filename_output[50];
+  sprintf(filename_output, "output/output_phi0-%.1f_L-%.1f_NSIDE-%d.dat", boundary, L, N_SIDE);
+  file = fopen(filename_output, "w");
   m = 0;
   for(int i=0; i<N_node_side; i++) {
     for(int j=0; j<N_node_side; j++) {
@@ -396,25 +410,62 @@ int main(void) {
     }
     fprintf(file, "\n");
   }
-
-
   fclose(file);
 
   // plot by gnuplot
   FILE *gp;
   gp = popen("gnuplot -persist", "w");
-  fprintf(gp, "u(x,y,n) = sum[k=1:n] u0*2.0*(1-(-1)**k)*sin(k*pi*x/L)*(exp(k*pi*y/L)-exp(-k*pi*y/L))/(k*pi*(exp(k*pi)-exp(-k*pi)))\n");
-  fprintf(gp, "u0 = %f\n", boundary);
+  fprintf(gp, "phi(x,y,n) = sum[k=1:n] phi0*2.0*(1-(-1)**k)*sin(k*pi*x/L)*(exp(k*pi*y/L)-exp(-k*pi*y/L))/(k*pi*(exp(k*pi)-exp(-k*pi)))\n");
+  fprintf(gp, "phi0 = %f\n", boundary);
   fprintf(gp, "L = %f\n", L);
   fprintf(gp, "set xrange [0:%f]\n", L);
   fprintf(gp, "set yrange [0:%f]\n", L);
-  //fprintf(gp, "splot u(x,y,%d), \"output/output.dat\" with lines\n", N_SERIES);
-  fprintf(gp, "splot \"output/output.dat\" with lines\n", N_SERIES);
+  fprintf(gp, "set xlabel \"x\"\n");
+  fprintf(gp, "set ylabel \"y\"\n");
+  fprintf(gp, "set zlabel \"T\"\n");
+  fprintf(gp, "set xlabel font \"Arial, 24\"\n");
+  fprintf(gp, "set ylabel font \"Arial, 24\"\n");
+  fprintf(gp, "set zlabel font \"Arial, 24\"\n");
+  // plot analytical solution
+  fprintf(gp, "splot phi(x,y,%d) title \"n:%d\"\n", N_SERIES, N_SERIES);
+  fprintf(gp, "set terminal pngcairo\n");
+  fprintf(gp, "set out \"output/answer_phi0-%.1f_L-%.1f_n-%d.png\"\n", boundary, L, N_SERIES);
+  fprintf(gp, "replot\n");
+  // plot numerical solution
+  fprintf(gp, "splot \"%s\" with lines lc rgb \"red\" title \"partitions:%d*%d\"\n", filename_output, N_SIDE, N_SIDE);
+  fprintf(gp, "set out \"output/output_phi0-%.1f_L-%.1f_NSIDE-%d.png\"\n", boundary, L, N_SIDE);
+  fprintf(gp, "replot\n");
+
   pclose(gp);
 
- // for(int i=0; i<N_node; i++) {
- //   printf("%f\n", phis_node[i]);
- // }
+  // output error between analytical and numerical solutions
+  double total_squared_error = 0.0;
+  double x;
+  double y;
+  double error;
+  double normalized_total_error;
+  m = 0;
+  for(int i=0; i<N_node_side; i++) {
+    for(int j=0; j<N_node_side; j++) {
+      x = nodes[i][j].x;
+      y = nodes[i][j].y;
+      double phi_analytical = 0.0;
+      for(int k=1; k<N_SERIES+1; k++) {
+        phi_analytical += boundary * 2.0 * (1-pow(-1, k)) * sin(k*PI*x/L) * (exp(k*PI*y/L)-exp(-k*PI*y/L)) / (k* PI * (exp(k*PI) - exp(-k*PI)));
+      }
+      error = phi_analytical - phis_node[m];
+      total_squared_error += pow(error, 2);
+      m++;
+    }
+  }
+  normalized_total_error = sqrt(total_squared_error/N_node);
 
+
+  char filename_error[50];
+  sprintf(filename_error, "output/error_phi0-%.1f_L-%.1f_NSIDE-%d_n-%d.txt", boundary, L, N_SIDE, N_SERIES);
+  file = fopen(filename_error, "w");
+  fprintf(file, "%f\n", normalized_total_error);
+  fclose(file);
+  
   return 0;
 }
